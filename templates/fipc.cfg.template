@@ -1,0 +1,21 @@
+#
+# @(#) $Id: fipc.cfg.template,v 1.1 1999/08/17 22:02:39 ivm Exp $
+#
+# $Author: ivm $
+#
+# FIPC configuration file template. Format of the file is:
+#
+#	hostname chain-port# server-port#
+#	hostname chain-port# server-port#
+#	hostname chain-port# server-port#
+#	...
+#
+# $Log: fipc.cfg.template,v $
+# Revision 1.1  1999/08/17 22:02:39  ivm
+# Added fipc.cfg.template
+#
+#
+
+hppc	7000	8000
+hppc	7001	8001
+hppc	7002	8002

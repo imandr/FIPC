@@ -1,0 +1,13 @@
+#!/bin/sh -f
+#
+# @(#) $Id: xfipc,v 1.1 1999/11/08 20:08:44 ivm Exp $
+#
+# $Author: ivm $
+# 
+# $Log: xfipc,v $
+# Revision 1.1  1999/11/08 20:08:44  ivm
+# Added GUI stuff to makefiles, new command xfipc
+#
+#
+
+python $FIPC_DIR/bin/GuiFipc.py "$@"

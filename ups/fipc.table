@@ -1,0 +1,66 @@
+#
+# @(#) $Id: fipc.table,v 1.9 2000/07/26 20:21:06 ivm Exp $
+#
+# $Author: ivm $
+#
+# $Log: fipc.table,v $
+# Revision 1.9  2000/07/26 20:21:06  ivm
+# Removed FCSLIB modules, added FCSLIB to UPS action table file
+#
+# Revision 1.8  2000/05/23 17:05:40  ivm
+# Use envRemove() instead of pathRemove()
+#
+# Revision 1.7  1999/10/12 16:15:10  ivm
+# Fixed bug in chain with multiple tokens
+#
+# Revision 1.6  1999/10/04 15:47:29  ivm
+# Fixed bugs
+#
+# Revision 1.5  1999/08/18 21:58:28  ivm
+# emoved "setup python" from Tailor action in fipc.table
+#
+# Revision 1.4  1999/08/18 17:07:05  ivm
+# Added fipc_common.py
+# Added END to fipc.table
+#
+# Revision 1.3  1999/08/18 16:39:54  ivm
+# Added fipc_compile.py
+#
+# Revision 1.2  1999/08/18 16:03:31  ivm
+# Fixed some bugs
+#
+# Revision 1.1  1999/08/17 21:56:42  ivm
+# Made UPS compliant
+#
+#
+
+FILE=TABLE
+PRODUCT=fipc
+
+Group:
+  Flavor=ANY
+  Qualifiers=""
+ 
+
+  Action=Setup
+    setupEnv()
+    proddir()
+    pathPrepend(PATH, ${UPS_PROD_DIR}/bin)
+    setupRequired("python")
+	setupRequired("fcslib")
+    envPrepend(PYTHONPATH,"${UPS_PROD_DIR}/bin:${UPS_PROD_DIR}/lib")
+	sourceRequired(${UPS_PROD_DIR}/bin/setroot.${UPS_SHELL}, UPS_ENV)
+	envSet(FIPC_MAP_FILE, ${FIPC_ROOT}/fipc.cfg)
+  Action=Tailor
+    setupEnv()
+	execute(${UPS_PROD_DIR}/ups/configure.sh, UPS_ENV)
+  Action=Unsetup
+    unsetupEnv()
+    unprodDir()
+    pathRemove(PATH,"${UPS_PROD_DIR}/bin")
+    envUnset(FIPC_ROOT)
+	envUnset(FIPC_MAP_FILE)
+    envRemove(PYTHONPATH,"${UPS_PROD_DIR}/bin")
+    envRemove(PYTHONPATH,"${UPS_PROD_DIR}/lib")
+END:
+

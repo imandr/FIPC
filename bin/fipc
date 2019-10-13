@@ -1,0 +1,51 @@
+#!/bin/sh -f
+#
+# @(#) $Id: fipc,v 1.4 1999/10/12 16:15:07 ivm Exp $
+#
+# $Author: ivm $
+# 
+# $Log: fipc,v $
+# Revision 1.4  1999/10/12 16:15:07  ivm
+# Fixed bug in chain with multiple tokens
+#
+# Revision 1.3  1999/08/19 21:25:02  ivm
+# Implemented delete command, fixed bug in 'ls'
+# New format of messages, use regexp
+#
+# Revision 1.2  1999/08/17 21:55:54  ivm
+# Made UPS compliant
+# Use single config file
+#
+# Revision 1.1  1999/07/12 19:36:26  ivm
+# *** empty log message ***
+#
+# Revision 1.7  1999/05/24 16:46:15  ivm
+# Split lock-ui.py into fipc.py and fipc_ui.py
+#
+# Revision 1.6  1999/05/21  19:49:43  ivm
+# Fixed PYTHONPATH
+#
+# Revision 1.5  1999/05/20  20:36:05  ivm
+# Fixed recursive call
+#
+# Revision 1.5  1999/05/20  20:36:05  ivm
+# Fixed recursive call
+#
+# Revision 1.4  1999/05/17  15:10:19  ivm
+# *** empty log message ***
+#
+# Revision 1.4  1999/05/17  15:10:19  ivm
+# *** empty log message ***
+#
+# Revision 1.3  1999/05/14  20:07:56  ivm
+# Minor fixes
+#
+# Revision 1.3  1999/05/14  20:07:56  ivm
+# Minor fixes
+#
+#
+
+#+FUE		(assuming "setup fipc" is done, python, FIPC_DIR, PYTHONPATH, 
+#			PATH, FIPC_ROOT are set up)
+
+python $FIPC_DIR/bin/fipc.py -m $FIPC_MAP_FILE "$@"

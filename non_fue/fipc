@@ -1,0 +1,22 @@
+#!/bin/sh -f
+#
+# @(#) $Id: fipc,v 1.2 1999/10/13 16:46:13 ivm Exp $
+#
+# $Author: ivm $
+#
+# Non-FUE version of fipc front-end script
+# 
+# $Log: fipc,v $
+# Revision 1.2  1999/10/13 16:46:13  ivm
+# Added instructions
+#
+# Revision 1.1  1999/10/13 16:00:38  ivm
+# Added non-FUE scripts
+#
+#
+
+# Edit the following line to reflect your configuration
+
+. FIPC_ROOT/bin/setup_fipc.sh
+
+python $FIPC_DIR/bin/fipc.py -m $FIPC_MAP_FILE "$@"

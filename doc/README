@@ -1,0 +1,277 @@
+
+
+                                 R E A D M E
+
+
+Product Name (preliminary):         FIPC
+									(Farm Inter-Process Communication Toolkit)
+Product Version:	       			v1_2
+Date (mm/dd/yyyy):      			07/07/1999
+
+------------------------------------------------------------------------
+
+                        ORIGIN
+                        ======
+Authors
+
+    Farms & Clustered Systems Group
+    Fermi National Accelerator Laboratory - Mail Station 369
+    P.O Box 500
+    Batavia, IL 60510
+    Internet: fcs-group@fnal.gov
+
+Fermilab Standard Government Sponsorship Notice
+
+    This work was performed at Fermi National Accelerator Laboratory,
+    which is operated by Universities Research Association, Inc., under
+    contract DE-AC02-76CHO3000 with the U.S. Department of Energy.
+
+Acknowledgements
+
+    The authors wish to particularly acknowledge the following people who
+    have added much to this software through comments, suggestions, and
+    testing:
+
+        Lucyna De Barbaro   (Northwestern University, D0, NuTeV
+                             collaborations)
+        Yen-Chu Chen        (Academia Sinica (Taiwan), CDF collaboration)
+        Duga Rajaram        (Illinois Institute of Technology,
+                             E871 collaboration)
+        Howard Rubin        (Illinois Institute of Technology,
+                             E871 collaboration)
+        Heidi Schellman     (Northwestern University, D0 collaboration)
+        Antonio Wong Chan   (Academia Sinica (Taiwan), CDF collaboration)
+
+
+------------------------------------------------------------------------
+
+                        TERMS AND CONDITIONS
+                        ====================
+
+This software has been made freely available with a request for
+collaborative input subject to standard Fermitools Terms and Conditions
+given in full below.
+
+------------------------------------------------------------------------
+
+                        PRODUCT DESCRIPTION
+                        ===================
+
+Farm Inter-Process Communication Toolkit (FIPC) is an IPC middleware
+product designed to be used in distributed computing environemnt
+such as farm or clustered environment. It allows processes on different
+computers within an FIPC Cluster to communicate and synchronize with
+each other across a TCP/IP network.
+
+The following IPC primitive objects are implemented:
+
++ Binary semaphores (locks)
++ Anonymous counted semaphores (integer flags)
++ Non-anonymous counted semaphores (gates)
++ Queues
++ Lists
++ Text variables
+
+Locks, gates and queues allow automatic clean-up in case of unexpected
+shutdown of a client.
+
+The idea of FIPC comes from the E871 collaboration experience of using
+Farm Batch System (FBS)for processing their experimental data. Although 
+designed for FBS users, FIPC does not depend on FBS and can be used with other
+batch systems or even in non-batch environment.
+
+Chain Link Protocol
+-------------------
+The core of FIPC is Chain Link protocol designed and developed in Fermilab.
+The protocol allows any number of collaborating TCP server processes
+to form a reliable communication ether (Ring). The protocol allows
+the following types of messages:
+
++ broadcast
++ poll (or sign sheet)
++ direct one-to-one messages
+
+When properly used, the protocol allows any one or more members of the ring to
+disconnect and re-connect at any time without loss of information.
+FIPC uses the protocol to implement atomic test-and-set operations on
+text variables.
+
+Interface
+---------
+FIPC provides two forms of interface:
++ UNIX shell level user interface (UI) and
++ Python Application Programming Interface (API)
+
+Documentation
+-------------
+Currently, FIPC documentation is limited to the following:
+
+     FILE                FORMAT       DESCRIPTION
+     =================   ======       =========================
+     README              ASCII        General, Very Basic Overview
+     doc/UI.txt          ASCII        UI usage information
+     doc/API.txt         ASCII        API description
+     doc/Install.txt     ASCII        Installation and configuration notes
+     non_fue/Non-FUE-Install.txt
+	                     ASCII        Installation notes for non-FUE users
+
+Required Hardware and Software
+------------------------------
+
+FIPC is written primarily in Python, but has some C-language source as well.
+Python v1.5 or newer is required for the run-time environment.
+
+FIPC is currently supported under IRIX and Linux operating systems.
+
+Product Installation and Running
+--------------------------------
+See doc/install.txt
+
+------------------------------------------------------------------------
+
+                        SUPPORT
+                        =======
+FIPC is one of a class of Special Products in Fermitools that requires
+extra consultation or assistance with proper configuration at set-up or
+additional information about its distribution. Therefore, it is available
+only upon consultation with the Product Providers and registration in the
+Fermilab KITS software distribution system. For assistance, please send
+email to the support address for this product:
+
+                   FIPC-support@fnal.gov
+
+This software is furnished by Fermilab on an "as is" basis as a service
+to the wider community with the goal of stimulating collaborative use
+and further development.
+
+Provision of the software implies no commitment of support by Fermilab.
+
+The Fermilab Computing Division is open to discussing other levels of
+support for use of the software with responsible and committed users and
+collaborators.
+
+Use of the software in experiments at Fermilab will be assured of a
+level of support as agreed to through the standard Memorandum Of
+Understanding process.
+
+Users may send mail to the mail address given above, with the
+expectation that it will be read and noted.
+------------------------------------------------------------------------
+
+                        TERMS AND CONDITIONS IN FULL
+                        ============================
+
+------------------------------------------------------------------------
+    Fermitools Software Legal Information - June 16, 1999
+------------------------------------------------------------------------
+
+COPYRIGHT STATUS:  Fermi National Accelerator Laboratory (FNAL)
+documents are sponsored by the U.S. Department of Energy under Contract
+No. DE-AC02-76CH03000. Therefore, the U.S. Government retains a
+non-exclusive, royalty-free license to publish or reproduce these
+documents or software for U.S. Government purposes.  All documents
+and software available from this server are protected under the U.S.
+and Foreign Copyright Laws, and FNAL reserves all rights.
+
+EXPORT CONTROL:  All documents and software available from this server are
+subject to U.S. export control laws.  Anyone downloading information from
+this server is obligated to secure any necessary Government licenses before
+exporting documents or software obtained from this server.  Failure to
+obtain export licenses may result in penalties, including fines and/or
+imprisonment, under U.S. laws.
+
+Terms and Conditions
+--------------------
+o   Distribution of the software available from this server is free of
+    charge.
+
+When a User obtains a software package included in the Fermilab Software
+Tools Program, the user agrees to abide by the Terms and Conditions of the
+Program below:
+
+o   Any redistribution and/or modification of the software shall be
+    accompanied by this README file.
+
+o   The User shall acknowledge the origin of the software as set forth
+    below:
+
+        "This work was performed at Fermi National Accelerator
+         Laboratory, operated by Universities Research Association,
+         Inc., under contract DE-AC02-76CH03000 with the U.S. Department
+         of Energy."
+
+o   The user is asked to feed back problems, benefits, and/or
+    suggestions about the software to the Fermilab Software Providers
+    and/or Fermitools management.
+
+
+Indemnification by User of Third Party Claims and
+Disclaimer of Liability
+-----------------------------------------------------------------------
+The User, his/her directors, officers, employees, and agents hereby
+release and waive all claims against Universities Research Association,
+Inc. (URA) operator of Fermi National Accelerator Laboratory, its
+trustees, overseers, directors, officers, employees, agents,
+subcontractors, successors and assigns, for any and all liability and
+damages arising from the reproduction, use or other disposition of the
+software.  The User agrees that URA, its trustees, overseers, directors,
+officers, employees, agents, subcontractors, successors and assigns shall
+not be liable under any claim, charge, or demand, whether in contract, tort,
+criminal law, or otherwise, for any and all loss, cost, charge, claim,
+demand, fee, expense,or damage of every nature and kind arising out of,
+connected with, resulting from or sustained as a result of the use of the
+software programs available from this server.  In no event shall URA be
+liable for special, direct, indirect or consequential damages,
+losses, costs, charges, claims, demands, fees or expenses of any nature
+or kind.
+
+The User shall indemnify URA and the U.S. Government for all damages, costs
+or expenses, including attorney's fees, arising from the utilization of the
+software, including, but not limited to, the making, using, selling or
+exporting of products, processes or services derived from the Software.  The
+User agrees to indemnify, hold harmless and defend URA, its trustees,
+overseers, directors, officers, employees, agents, subcontractors,
+successors and assigns, against any and all liability, damage, loss, cost,
+charge, claim, demand, fee or expense of every nature and kind which may at
+any time hereafter be sustained by URA by reason of claims of third parties
+arising out of alleged acts or omissions of the User in the reproduction,
+use or other disposition of the Software.
+
+
+
+Disclaimer of Warranties
+------------------------
+The software is provided on an "as is" basis only.  URA makes no
+representations, express or implied.  URA MAKES NO REPRESENTATIONS OR
+WARRANTIES OF MERCHANTABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE, or
+assumes any legal liability or responsibility for the accuracy,
+completeness, or usefulness of any information, apparatus, product or
+process disclosed, or represents that the Software will not infringe
+any privately held patent, copyright, or trademark.  The entire risk
+as to the results and the performance of this software is assumed by
+the User.
+
+Disclaimer of Endorsement
+-------------------------
+Reference herein to any specific commercial products, process, or
+service by tradename, trademark, manufacturer or otherwise, does not
+constitute or imply its endorsement, recommendation, or favoring by
+the United States Government, U.S. Department of Energy or URA.  The
+views and opinions of individuals expressed herein do not necessarily
+state or reflect those of the United States Government, U.S. Department
+of Energy or URA and shall not be used for advertising or product
+endorsement purposes.
+
+Liabilities of the Government
+-----------------------------
+This software is provided by URA, independent from its Prime Contract
+with the U.S. Department of Energy.  URA is acting independently from
+the Government and in its own private capacity and is not acting on
+behalf of the U.S. Government, nor as its contractor nor its agent.
+Correspondingly, it is understood and agreed that the U.S. Government
+has no connection to this software and in no manner whatsoever shall be
+liable for nor assume any responsibility or obligation for any claim,
+cost, or damages arising out of or resulting from the use of the
+software available from this server.
+------------------------------------------------------------------------
+

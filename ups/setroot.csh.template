@@ -1,0 +1,16 @@
+#!/bin/csh -f
+#
+# @(#) $Id: setroot.csh.template,v 1.2 1999/08/18 16:03:32 ivm Exp $
+#
+# $Author: ivm $
+#
+# $Log: setroot.csh.template,v $
+# Revision 1.2  1999/08/18 16:03:32  ivm
+# Fixed some bugs
+#
+# Revision 1.1  1999/08/17 21:56:42  ivm
+# Made UPS compliant
+#
+#
+
+setenv FIPC_ROOT "_ROOT_"

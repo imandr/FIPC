@@ -1,0 +1,303 @@
+
+				FIPC v1_2 APPLICATION PROGRAMMING INTERFACE (API)
+				==================================================
+
+FIPC API allows Python programs to access FIPC objects directly
+without going through FIPC UI.
+
+Environment Setup
+-----------------
+FIPC is FUE compliant product. To start using it, FUE user has
+to issue command:
+
+	setup fipc
+	
+Non-FUE users have to source setup_fipc.csh or setup_fipc.sh
+script.
+
+In Python script, user must import fipc_api module:
+
+from fipc_api import *
+fc = FIPCClient()		# must create this object first
+l = Lock(fc, '/my/lock')
+l.lock()
+l.unlock()
+
+Object Protection
+-----------------
+Starting from FIPC v1.2, every FIPC object has a protection mask.
+Protection mask is a 2 character string. First character represents
+permissions granted to user's group members other than the user,
+and second specifies permissions granted to members of other groups.
+FIPC uses UNIX user and group ids. Each character can be one of the
+following:
+
+	'-' 	-	no access
+	'r' 	-	read only access
+	'x' 	-	read, modify and delete access
+
+Object creator always has full access to the object. Default protection
+mask is 'xr'.
+
+API Classes:
+------------
+FIPCClient	-	class which maintains global FIPC context
+Methods:
+
+	constructor FIPCClient(id_scope='p')
+		creates the object
+		id_scope parameter specifies scope of client id:
+			'p' - default, the process itself represents the client, any process
+			spawned by this process will be treated as separate FIPC
+			client
+			's' - this process, and all other processes within the
+			same session are treated as single FIPC client
+
+	isAlive(client_id)
+		returns 1 if the client exists, or 0 if not.
+		If connection with the host can not be established for
+		more than 5 seconds, considers the host down, and all
+		clients there dead.
+
+	myId()	returns string with your own FIPC id
+
+	objects(path='/', types='*')
+		returns list of FIPC API objects representing existing FIPC
+		objects matching the criteria specified with path and types.
+		path specifies FIPC directory
+		types can be either '*', or sum of one or more pre-defined strings:
+			FIPC_TYPE_QUEUE
+			FIPC_TYPE_LOCK
+			FIPC_TYPE_FLAG
+			FIPC_TYPE_GATE
+			FIPC_TYPE_VARIABLE
+			FIPC_TYPE_LIST
+		For example:
+			fc = FIPCClient()
+			lst = fc.objects('/cdf/prod',FIPC_TYPE_LOCK+FIPC_TYPE_QUEUE)
+		In this example, lst will be a list of FIPC API objects representing
+		all locks and queues under /cdf/prod directory.
+
+	rmdir(self, path)	destroys all objects under specified directory,
+		which the user has the permission to destroy (see Object Permissions
+		above)
+
+	versions()	returns tuple with versions of different FIPC components			
+
+	ping()	returns list of host names where FIPC servers are currently
+		running
+
+Common object features
+----------------------
+Every FIPC API object, regardless of its type, has the following
+data members:
+	Type	- one of FIPC_TYPE_... constants listed above
+	Uid 	- numeric UNIX user id of the object creator
+	Gid 	- numeric UNIX group id of the object creator
+	Prot	- object protection mask
+	OldVal	- value the object had immediately before last modification
+	Reason	- reason for failure of last modification, if it failed
+
+Constructors of all FIPC objects have the following optional
+arguments:
+	do_not_create	- default = 0. If set to 1, FIPC API will not
+		attempt to create corresponding FIPC object
+	prot			- default = 'xr'. Object protection mask
+
+All FIPC API objects have method destroy() which destroys corresponding
+FIPC object (not Python object, of course!). 
+
+Lock		-	FIPC binary lock class
+	constructor Lock(fipc_client, path, init='unlocked', do_not_create=0,
+						prot='xr')
+
+	Type member of the class has value FIPC_TYPE_LOCK
+
+		creates Lock object. Parameters are:
+			fipc_client - previously created FIPCClient object
+			path - path-like name of the lock, e.g.'/d0/prod/lock1'
+			init - string with 2 recognized values 'locked' and
+				'unlocked'. It is used in case if lock
+				does not exist and has to be created.
+				If the value is 'locked' - the lock will
+				be created and locked by the caller.
+			do_not_create - do not attempt to create the lock in
+				FIPC.
+			prot - object protection mask
+
+	lock(tmo = None)
+		waits for the lock and acquires it. Optionally, timeout
+		measured in seconds can be specified by 'tmo' parameter.
+		By default, it will wait forever.
+		If tmo = 0, it will try to acquire the lock only once
+		and return immediately.
+
+	unlock()
+		releases the lock
+
+	clean(force = 0)
+		verifies that the client which holds the lock is still
+		alive, and if it's not, unlocks the lock. If force = 1,
+		lock is released unconditionally.
+
+	get()	returns FIPC id of the lock holder or '_' if it's unlocked.
+
+Queue		-	FIPC queue class
+	constructor	Queue(fipc_client, path, do_not_create = 0, prot = 'xr')
+		see description of the parameters above
+
+	Type member of the class has value FIPC_TYPE_QUEUE
+
+	append()
+		appends caller's id to the end of the queue
+
+	wait(tmo = None, ahead = 0)
+		waits in the queue until either time-out expires, if specified,
+		or there is 'ahead' or less other clients ahead in the queue.
+
+	remove()
+		removes the oldest entrance of the client id from the queue.
+		Note that in some cases, a client may want to enter a queue
+		more than once.
+
+	clean(force = 0)
+		cleans the queue of dead clients. Force has the same effect
+		as in case of Lock
+
+	get()	returns ordered (oldest first) list of ids of the clients
+		in the queue.
+
+Gate		-	FIPC gate class, analogous to counted semaphore,
+			but non-anonymous, so it allows clean-up.
+	constructor Gate(fipc_client, path, room, do_not_create = 0, prot='xr')
+		room is an integer specifying how many clients are
+		allowed to be inside the gate in the same time.
+
+	Type member of the class has value FIPC_TYPE_GATE
+
+	enter(tmo = None)
+		wait at the gate, and then enter it. In some cases,
+		a client may want to enter a gate more than once. In this
+		case it has to call exit() (see below) as many times.
+
+	exit()	exit the gate and free up the room.
+
+	get()	returns list of client ids inside the gate. Unused room
+		is filled with '_'. So this list always has number
+		of elements equal to 'room' (see constructor), some of
+		them may be '_'.
+
+	clean(force = 0)
+		cleans dead enties out
+
+StringVar		-	FIPC general purpose string variable class.
+	constructor StringVar(fipc_client, path, init_val='', do_not_create =
+0)
+
+	Type member of the class has value FIPC_TYPE_VARIABLE
+
+	set(newVal, pattern = '.*', tmo = None)
+		changes value of the variable. If optional 'pattern' parameter
+		is specified, will wait until the value of the variable
+		matches the pattern. ed(1) regular expression notation
+		is used for pattern specification. New value may include
+		substrings of the form: '%1', '%2'... '%9'. Those will
+		be substituted with substrings of the original value
+		matched by subexpressions enclosed between '\(...\)'.
+		See sed(1), ed(1) for more information on subexpressions.
+
+	get()	returns current string value
+
+IntFlag		-	FIPC integer flag class. Can be used to implement
+			'anonymous' counted semaphores.
+	constructor IntFlag(fipc_client, path, init_val = 0, do_not_create = 0,
+			prot = 'xr')
+
+	Type member of the class has value FIPC_TYPE_FLAG
+
+	wait_set(op = '>', arg = 0, setop = None, setarg = None, tmo = None)
+		waits for the value of the flag to satisfy the condition
+		specified with op (is a string, one of '>', '>=', '==',
+		'!=', '<=', '<', arg (an integer). Optinally, this method
+		can atomically change the value of the variable, as soon as
+		it satisfies the criteria specified. Parameters setop and
+		setarg can be used for that. Setop can have one of
+		3 values: '+', '=', '-'. If setop is specified, setarg must
+		be specified too and must have an integer value. If setop
+		is '+' or '-', the value will be incremented or decremented
+		by setarg. If setop is '=', then setarg specifies new flag
+		value. For example:
+
+			flag.wait_set('>',5)	-- wait for the flag to be 6 or
+						greater
+			flag.wait_set('>',5,'-',1) -- wait for the flag to be 6
+						or greater, and then
+immediately
+						decrement it by 1
+			flag.wait_set('>=',1,'=',0) -- wait for the flag to
+						become positive, then reset it
+						to 0.
+		Optional tmo parameter has usual meaning.
+	get()	returns current flag value
+
+List	-	general purpose double-ended queue.
+
+	constructor List(fipc_client, path, init = [], do_not_create = 0,
+			prot = 'xr')
+		creates API object representing FIPC List. Optionally, user
+		can specify initial value of the list as list of strings.
+
+	Type member of the class has value FIPC_TYPE_LIST
+
+	append(item)	-	appends a string (item) to end of the list
+	
+	prepend(item)	-	prepends an item at list head
+	
+	remFirst()		-	removes first item from the list and returns
+		the removed item or None if the list was empty
+	
+	remLast()		-	removes last item from the list and returns
+		the removed item or None if the list was empty
+
+	clean() 		- 	clears the list, returns 1 on success and 0
+		on failure. OldVal member can be used to get the value
+		immediately before the list was cleared.
+
+	get()			-	returns list contents as Python list or None
+		on error
+		
+Return status
+-------------
+All methods listed above, when applicable, return 1 on success and 0
+on failure. In addition, every object has textual Reason member, which
+can be used to get additional information on faliure.
+Currently, Reason can have the following values:
+
+	"Not found" - the object does not exist in FIPC
+	"Mismatch" - the requested operation timed-out and was not performed.
+
+For example:
+
+	fc = FIPCClient()
+	l = fc.Lock(do_not_create = 1)
+	if not l.lock(10):
+		if l.Reason == 'Not found':
+			# the lock does not exist
+		elif l.Reason == 'Mismatch':
+			# time-out
+	else:
+		# OK
+
+Also, every object has member named OldValue. When applicable, it contains
+the velue the object had immediately before the operation was performed.
+For example:
+
+	f = IntFlag(...)
+	f.wait_set('<',10,'+',5)
+	x = f.OldValue + 5
+	y = f.get()
+
+In this example, y does not necessarily have new flag value, because some
+other client may have modified it already. On the other hand, x is true
+new value of the variable.
+

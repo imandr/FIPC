@@ -1,0 +1,101 @@
+
+				FIPC v1_3 INSTALLATION AND RUNNING
+
+FIPC is FUE-compliant product. To install it, one should use UPS/UPD.
+FIPC reuires UPS tailoring. Make sure to specify fipc.table file
+when using "ups declare".
+
+Instructions for non-FUE installation can be found in
+
+	non_fue/Non-FUE-Install.txt
+
+FUE Installation
+----------------
+1. Install FIPC following UPS/UPD instructions.
+
+2. Create FIPC configuration file in some preferrably NFS-shared
+directory. This file must be accessable from all potential FIPC
+client nodes. The file must be named 'fipc.cfg'.
+
+The file should have one line per FIPC server you are planning
+to run. Each line should look like this:
+
+        hostname port1 port2
+
+Port1 and port2 are port numbers servers will use. Make sure that
+the numbers are greater than 1024. For example:
+
+        # comments
+        fnpca.fnal.gov 5000 7000        # A node can run more than 1 server.
+        fnpca.fnal.gov 5001 7001        # In this case, make sure to use different# port numbers
+        fnpcb.fnal.gov 5000 7000        # You can use same port numbers on different
+        fnpcc.fnal.gov 5000 7000        # nodes
+
+3. Tailor FIPC installation. Issue UPS tailor command:
+
+	ups tailor -O <directory where fipc.cfg is> ... fipc
+
+4. FIPC should be ready for use now.
+
+Running FIPC
+-------------
+Start some FIPC servers. You do NOT have to run all FIPC servers configured
+in the map files. It is enough to run at least one of them. Running
+more than one increases chances of FIPC ring to survive single or multiple
+node shutdowns, but FIPC responce time is proportional to the number of
+servers forming the ring. To start an FIPC server:
+	
+		cd <FIPC_ROOT>
+		./fipc-srv.sh &
+		
+Here, <server#> represents the number of the server in the fipc-chian.map
+file counting from 0. For example, server [fnpca.fnal.gov 6002] is listed
+second in the ring map above. To run it, type
+
+		./fipc-srv.sh &
+		
+You may want to re-direct output of the server to a file or to /dev/null:
+
+		./fipc-srv.sh >/dev/null &
+		
+Please keep in mind that servers produce a lot of debug output, so expect such
+a file to grow quickly.
+
+Make sure that at least one server is running at any time.
+
+FIPC servers DO NOT have to run as root.
+
+Now you have to start FIPC Locals. They have to run under root on EVERY
+node of the cluster, both clients and servers:
+
+		su
+		Password: ...
+		cd <FIPC_ROOT>
+		./run_local.sh &
+		
+FIPC does not require Locals to run, but Locals are needed for automatic
+clean-up of dead resource holders.
+
+Verifying FIPC Status
+----------------------
+After you have started one or more FIPC servers, you can verify whether
+they are OK:
+
+		. <FIPC_ROOT>/setup.sh
+		fipc ping
+		
+It should print something like:
+
+		ping 1@host1 3@host5 ...
+		
+This is the list of servers which are running in the form: <server#>@<host>.
+
+To verify that Local is running on your local host:
+
+		fipc id
+		<it prints your id in the form your-session-id@your.local.host>
+		fipc finger <your id>
+		alive
+
+If id does not print "alive", something is wrong with FIPC Local on your
+host.

@@ -1,0 +1,71 @@
+FIPC Installation in non-FUE environment
+----------------------------------------
+
+***************************************************************
+If you do not know what FUE is, then probably you are not in
+FUE environemnt, and these instructions are for you.
+***************************************************************
+
+1. Create a directory preferrably somewhere in NFS-shared
+disk space. This will be the directory where FUE executables
+and user libraries reside. Keep in mind that some modules of
+FIPC are platform-dependent. Make sure that this directory
+is not NFS-shared by computers running different versions of OS.
+This directory will be referred to as 'FIPC_ROOT' in this
+document.
+
+2. Unwind FIPC distribution tar file in FIPC_ROOT directory.
+
+3. Create another directory, preferrably in NFS-shared by all
+computers disk space. This directory will contain platform-independent
+FIPC configuration file(s). It will be referred to as FIPC_CONFIG_DIR
+in this document.
+
+4. Decide what user will run FIPC servers. This can be any user,
+it does NOT have to be root or any other privileged user.
+This will be your FIPC_USER.
+
+5. Edit the following files in FIPC_ROOT/non_fue directoris:
+	setup_fipc.csh
+	setup_fipc.sh
+	fipc-srv.sh
+	fipc
+	fipc_startup.sh
+	run_local.sh
+Simply follow the instructions included in each file.
+You may want to insert necessary commands to set up Python in
+setup_fipc.sh and setup_fipc.csh.
+
+6. Copy all files from FIPC_ROOT/non-fue to FIPC_ROOT/bin.
+
+7. Create FIPC configuration file FIPC_CONFIG_DIR/fipc.cfg.
+The file should have one line per FIPC server you are planning
+to run. Each line should look like this:
+
+	hostname port1 port2
+	
+Port1 and port2 are port numbers servers will use. Make sure that
+the numbers are greater than 1024. For example:
+
+	# comments
+	fnpca.fnal.gov 5000 7000	# A node can run more than 1 server.
+	fnpca.fnal.gov 5001 7001	# In this case, make sure to use different
+								# port numbers
+	fnpcb.fnal.gov 5000 7000	# You can use same port numbers on different
+	fnpcc.fnal.gov 5000 7000	# nodes
+	
+8. Start FIPC. On ALL nodes of your cluster, including those listed
+in fipc.cfg:
+	su or login as root
+	make sure Python is in your path
+	run FIPC_ROOT/bin/fipc_startup.sh
+
+This will start fipc_local process on all nodes as root, and fipc-srv
+processes on all server nodes.
+
+9. Verifying that FIPC is running. As regular user:
+	source FIPC_ROOT/bin/setup_fipc.csh or
+		. FIPC_ROOT/bin/setup_fipc.sh	
+	issue "fipc ping" command. It should print list of running FIPC
+	servers.
+	

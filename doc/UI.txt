@@ -1,0 +1,173 @@
+
+				FIPC v1_2 USER INTERFACE
+				=========================
+
+FIPC user interface allows using FIPC from UNIX shell level, which
+makes FIPC accessable both for interactive users and script programs.
+User interface to FIPC is provided through single program named "fipc".
+In fact, "fipc" is a shell script which invokes Python script named
+fipc.py. The following is a brief description of user commands
+provided by FIPC. More detailed description will be provided
+in FIPC User's Guide and FIPC's Programmer's Manual.
+
+In order to use FIPC, user first has to make sure that
+	1. Python of version 1.5 or later is in executable search path (PATH)
+	2. fipc command itself is in PATH
+
+General "fipc" command format is:
+
+		fipc [-v][-q] <command> <options> <args ...>
+		fipc [-v][-q] -f <command-file>
+
+-v prints verbose output
+-q reduces output to minimum
+
+FIPC commands are:
+		create queue <queue_name>
+		delete queue <queue_name>
+		append <queue_name>
+		qwait [-t <timeout, sec>] <queue_name> [<n ahead>]
+		remove <queue_name>
+		clean [-f] queue <queue_name>
+		show queue <queue_name>
+		
+		create lock <lock_name>
+		delete lock <lock_name>
+		lock [-t <timeout, sec>] <lock_name>
+		unlock <lock_name>
+		clean [-f] lock <lock_name>
+		show lock <lock_name>
+		
+		create gate <gate_name> <room>
+		delete gate <gate_name>
+		enter [-t timeout, sec] <gate_name>
+		exit <gate_name>
+		clean [-f] gate <gate_name>
+		show gate <gate_name>
+		
+		create flag <flag_name> [<initial_value> (default: 0)]
+		delete flag <flag_name>
+		fset <flag_name> [+|-|=] <value>
+		fwait [-t <timeout, sec>] <flag_name> [[<|>] <threshold> (default: >0)
+			[[+|-|=] <new_value_or_inc/decrement>]]
+		show flag <flag_name>
+		
+		create variable <var_name>
+		delete variable <var_name>
+		get <var_name>
+		set <var_name> [value]
+		get-set <var_name> [<value>]
+		match-set [-t mimeout, sec] <var_name> <pattern> [<value>]
+
+		create [-p prot] list <list_name> [<item> ...]
+		delete list <list_name>
+		add (head|tail) <list_name> <item>
+		fetch (head|tail) <list_name>
+		clean <list_name>
+		count <list_name>
+		show list <list_name>
+
+		finger <id>
+		id
+		versions
+		ls [-V] [-q] [-l] [-v] [-g] [-f] [path]
+		rmdir <path>
+		ping
+
+Object Protection
+-----------------
+Starting from FIPC v1.2, every FIPC object has a protection mask.
+Protection mask is a 2 character string. First character represents
+permissions granted to user's group members other than the user,
+and second specifies permissions granted to members of other groups.
+FIPC uses UNIX user and group ids. Each character can be one of the
+following:
+
+	'-' 	-	no access
+	'r' 	-	read only access
+	'x' 	-	read, modify and delete access
+
+Object creator always has full access to the object. Default protection
+mask is 'xr'.
+
+User specifies object protection mask at the time of creation with
+-p option. 'create' command for all objects accepts this option.
+For example:
+
+	fipc create -p xx lock /fcs/test/lock_1
+
+
+Common Qualifiers
+-----------------
+Some FIPC commands recognize optional -t and -f qualifiers.
+
+-t <timeout-in-seconds> qualifier specifies how long user wants the
+command to wait in case the requested operation can not be completed
+immediately. 
+
+-t 0 means that the command does not block at all and returns immediately
+whether successfully or not.
+
+If -t is not specified, the command will block infinitely or until
+the requested operation completes.
+
+-f means "force". It can be used with some "clean-up" commands to disable
+verification of resource holder status. For example, user may want to
+clear a lock regardless of the fact that the client which holds
+the lock may be still alive.
+
+Variable Naming Convention
+--------------------------
+Although not implemented in current version of FIPC, future versions
+will accept variable names in UNIX file system /dir1/dir2/.../name
+format only. Paths used in FIPC variable names do not have anything
+to do with real file systems. It is recommended that hierarchy of the
+names is created in the following way:
+
+	1. Top level is used for truly global system-wide variables
+	which control resources accessed by all users of the cluster.
+	For example:
+	
+		/rcp_lock
+		
+	2. On second level will be used for group- and/or project-wide
+	variables:
+	
+		/cdf/prod_gate
+		/monte-carlo/nproc
+		
+	3. Third level should be used for projects within group and individual
+	users:
+	
+		/fcs/joe/my_personal_netscape_lock  
+		/e871/production/current_tape
+		
+and so on. There are plans to introduce some sort of object access
+control mechanism similar to UNIX file system protection which
+will allow users to protect both FIPC objects and "subdirectories".
+
+fipc ls command already is aware of this kind of hierarchy so that user
+can type
+
+	fipc ls /cdf			# will list objects under /cdf/ "directory"
+	fipc ls "/cdf/*lock"	# will list all objects under the directory
+							# with names ending with "lock"
+	fipc ls /cd 			# will print nothing unless there is either
+							# "directory" "/cd" or and object "/cd". 
+
+Regular Expressions
+-------------------
+Operations performed on text variables with match-set command accept
+pattern specified in terms of "standard" UNIX regular expressions notation.
+See ed(1) or sed(1) man pages for more information on regular expressions.
+New value in match-set command can be specified. If regular expression
+specification in pattern includes sub-expressions, value may contain
+substrings %1, %2, ... %9. If variable value matches the pattern, %n
+in new value will be replaced with n-th sub-expression.
+
+For example, assume that variable /cdf/flag has value "abc123".
+After command 
+
+	fipc match-set /cdf/flag "\(\[a-z\]+\)\(\[0-9\]+\)" "%2%1%2"
+	
+new value of the variable will be "123abc123".

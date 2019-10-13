@@ -1,0 +1,17 @@
+
+                            FIPC 
+                            
+                            Abstract
+                            
+FIPC is a software package which allows users to create distributed
+inter-process communication environment. The following objects are
+implemented in current version of FIPC:
+
+    - binary semaphore (lock)
+    - counted named semaphore (gate)
+    - counted anonymous semaphore (integer flag)
+    - FIFO queue
+	- Double-ended queue
+    - text variables
+    
+FIPC provides various atomic test-and-set operations on these objects.

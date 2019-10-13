@@ -1,0 +1,13 @@
+#!/bin/sh -f
+#
+# @(#) $Id: setroot.sh.template,v 1.1 1999/08/17 21:56:43 ivm Exp $
+#
+# $Author: ivm $
+#
+# $Log: setroot.sh.template,v $
+# Revision 1.1  1999/08/17 21:56:43  ivm
+# Made UPS compliant
+#
+#
+
+FIPC_ROOT="_ROOT_"; export FIPC_ROOT
