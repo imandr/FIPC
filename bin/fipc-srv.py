@@ -1,74 +1,3 @@
-#
-# @(#) $Id: fipc-srv.py,v 1.8 1999/10/12 16:15:08 ivm Exp $
-#
-# $Author: ivm $
-#
-# $Log: fipc-srv.py,v $
-# Revision 1.8  1999/10/12 16:15:08  ivm
-# Fixed bug in chain with multiple tokens
-#
-# Revision 1.7  1999/10/04 15:47:28  ivm
-# Fixed bugs
-#
-# Revision 1.6  1999/09/29 21:59:42  ivm
-# Implemented FIPCClient.objects() and rmdir()
-# Implemented uid/gid - based protection
-#
-# Revision 1.5  1999/08/19 21:25:03  ivm
-# Implemented delete command, fixed bug in 'ls'
-# New format of messages, use regexp
-#
-# Revision 1.4  1999/08/17 21:55:54  ivm
-# Made UPS compliant
-# Use single config file
-#
-# Revision 1.3  1999/08/03 19:47:24  ivm
-# Make connection timeout in chain 5 seconds
-# Use connect with timeout in client
-#
-# Revision 1.2  1999/07/12 19:35:52  ivm
-# *** empty log message ***
-#
-# Revision 1.12  1999/06/01 20:26:45  ivm
-# Implemented ping ui command
-#
-# Revision 1.11  1999/05/28  16:13:38  ivm
-# Cleaned-up log messages
-#
-# Revision 1.10  1999/05/24  15:00:26  ivm
-# Fixed bug in createString()
-#
-# Revision 1.9  1999/05/21  18:14:06  ivm
-# Fixed simultaneous SET problem
-#
-# Revision 1.8  1999/05/21  14:22:36  ivm
-# Latest version with mixed ChainLink
-#
-# Revision 1.6  1999/05/20  19:18:33  ivm
-# Imperfect working version, with request suspension
-#
-# Revision 1.5  1999/05/20  15:03:32  ivm
-# Version with deferred execution (correct one)
-#
-# Revision 1.2  1999/05/18  14:37:08  ivm
-# Implemented versions command
-#
-# Revision 1.1  1999/05/17  21:41:06  ivm
-# Initial revision
-#
-#
-# Log: lock-srv.py,v
-# Revision 1.6  1999/05/17  18:14:03  ivm
-# Debug messages cleaned up
-#
-# Revision 1.2  1999/05/12  21:09:58  ivm
-# Read maps from files
-#
-# Revision 1.1  1999/05/12  20:20:48  ivm
-# Initial revision
-#
-#
-
 from TCPServer import *
 from SockStream import *
 from chain import *
@@ -334,7 +263,6 @@ class	LockSrv(ChainSegment):
 		ChainSegment.run(self, tmo)
 		self.idle()
 
-
 	def processMessageCbk(self, src, dst, msg):
 		print 'Message from %s, to %s: <%s>' % (src, dst, msg)
 		if dst == CMessage.Broadcast:
@@ -395,7 +323,6 @@ class	LockSrv(ChainSegment):
 				lst = args[2]
 				lst.append('%d@%s' % (self.Inx, gethostname()))
 				msg = self.packMsg('PING', rid, str, lst)
-
 		else:
 			if self.State == 'NeedSync':
 				if cmd == 'SR':
