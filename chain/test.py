@@ -1,4 +1,4 @@
-from chain import ChainSegment
+from chain import ChainLink
 import sys
 from Selector import Selector
 from chain_map import ChainMap
@@ -14,7 +14,20 @@ map_file = opts["-m"]
 map = ChainMap(map_file)
 sel = Selector()
 
-cs = ChainSegment(my_index, map.chainMap(), sel)
+class CallBack(object):
+
+    def messageConfirmed(self, msg):
+        print("Message confirmed: %s" % (msg,))
+        
+    def messageReceived(self, msg):
+        print("Message received: %s" % (msg,))
+
+
+cs = ChainLink(my_index, map.chainMap(), CallBack(), sel)
+
+cs.broadcast("Hello all", need_confirmation=True)
+
 
 while True:
+    print ("call run()...")
     cs.run(10)

@@ -1,3 +1,7 @@
+*.bck
+*.bak
+*.tabs
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

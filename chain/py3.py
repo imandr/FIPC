@@ -6,7 +6,7 @@ PY2 = sys.version_info[0] == 2
 
 def to_bytes(s):
     if isinstance(s, str):
-        s = bytes(str, "utf-8")
+        s = bytes(s, "utf-8")
     return s
     
 def to_str(b):

@@ -7,6 +7,7 @@ import errno
 import time
 from SockStream import SockStream
 from py3 import to_str, to_bytes
+from pythreader import PyThread, Primitive
 
 class ChainException(Exception):
     def __init__(self, text=""):
@@ -15,9 +16,26 @@ class ChainException(Exception):
     def __str__(self):
         return "ChainException: %s" % (text,)
 
-class   ChainSegment(object):
+def poll(dispatch, tmo):
+    p = select.poll()
+    
+    map = {}
+    channels = 
+    for channel, function in dispatch:
+        if channel is not None:
+            fd = channel if isinstance(channel, int) else channel.fileno()
+            map[fd] = (channel, function)
+            p.register(fd, select.POLLIN)
+    
+    if len(map) > 0:
+        fired = p.poll(tmo)
+        for fd, mask in fired:
+            channel, function = map[fd]
+            function(channel)
+    
+class   ChainSegment(PyThread):
         def __init__(self, inx, map, sel):
-        #PyThread.__init__(self)
+                PyThread.__init__(self)
                 self.UpSock = None
                 self.UpStr = None
                 self.DnSock = None
@@ -36,8 +54,100 @@ class   ChainSegment(object):
                 self.IgnorePusher = -1
                 self.LastPushSeq = 0
                 self.LastPing = 0
-                self.connect()
                 print ("ChainSegment: connected")
+
+        def io(self, tmo = None):
+            poll([
+                    (self.SSock,        self.doConnectionRequest),
+                    (self.DnSock,       self.doReadDn),
+                    (self.UpSock,       self.doReadUp)
+                ],
+                tmo
+            )
+            
+        def connect(self):
+                #print 'Connect: my inx = ', self.Inx
+                for i in range(len(self.Map)):
+                        inx = self.Inx - i - 1
+                        if inx < 0: inx += len(self.Map)
+                        # sock = socket(AF_INET, SOCK_STREAM)
+                        # try to connect to server #inx
+                        addr = self.Map[inx]
+                        sock = None
+                        print('connecting to #', inx, ' at ', addr)
+                        try:
+                                sock = self.connectSocket(addr, 5)
+                        except:
+                                print((sys.exc_type, sys.exc_value))
+                                pass
+                        if sock == None:
+                                print('Connection failed')
+                                continue                                
+                        stream = SockStream(sock)
+                        print('Sending HELLO...')
+                        stream.send(b'HELLO %d' % self.Inx)
+                        print(('Up connection to %d established' % inx))
+                        self.UpSock = sock
+                        self.Sel.register(self, rd = self.UpSock.fileno())
+                        self.UpStr = stream
+                        self.UpInx = inx
+                        
+                        #
+                        # wait for down connection
+                        #
+                        
+                        while self.DnStr is None:
+                            self.run(1)
+                        
+                        return inx
+                else:
+                    # this should connect at least to self
+                    raise RuntimeError("Can not connect uspream")
+                    
+        def run(self):
+            while True:
+                self.connect()
+                self.waitForDownConnection()
+        
+                while True:
+                    poll([
+                        (self.SSock,        self.doConnectionRequest),
+                        (self.DnSock,       self.doReadDn),
+                        (self.UpSock,       self.doReadUp)
+                    ],
+                    10
+                )
+
+        def doReadDn(self):
+                self.DnStr.readMore(1024)
+                #print 'DnStr: EOF = %s, Buf = <%s>' % (self.DnStr.EOF, 
+                #               self.DnStr.Buf)
+                while self.DnStr.msgReady():
+                        msg = self.DnStr.getMsg()
+                        print(('RCVD DN:<%s>' % msg[:100]))
+                        pkt = CPacket.from_bytes(msg)
+                        if pkt.Type == CToken.Type:
+                                self.gotToken(pkt)
+                        elif pkt.Type == CPusher.Type:
+                                self.gotPusher(pkt)
+                        elif pkt.Type == CMessage.Type:
+                                self.gotMessage(pkt)
+                if self.DnStr.eof():
+                        # Down link is broken. Close the socket,unregister it
+                        self.downDisconnectedCbk()
+                        self.closeDnLink()
+
+        def doReadUp(self):     # nothing meaningfull, just pings
+                self.UpStr.readMore(1024)
+                while self.UpStr.msgReady():
+                        self.UpStr.getMsg()     # upstream should never send anything
+                                                # except zing/zong thing or disconnection
+                if self.UpStr.eof():
+                        # Down link is broken. Close the socket,unregister it
+                        print('up link broken')
+                        self.closeUpLink()
+                        self.connect()
+
                 
         def initServerSock(self, inx, map):
                 if inx is not None:
