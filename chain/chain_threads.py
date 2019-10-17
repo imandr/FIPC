@@ -56,7 +56,7 @@ class   ChainSegment(PyThread):
                 self.LastPing = 0
                 print ("ChainSegment: connected")
 
-        def io(self, tmo = None):
+        def io(self, tmo):
             poll([
                     (self.SSock,        self.doConnectionRequest),
                     (self.DnSock,       self.doReadDn),
@@ -65,89 +65,30 @@ class   ChainSegment(PyThread):
                 tmo
             )
             
-        def connect(self):
-                #print 'Connect: my inx = ', self.Inx
-                for i in range(len(self.Map)):
-                        inx = self.Inx - i - 1
-                        if inx < 0: inx += len(self.Map)
-                        # sock = socket(AF_INET, SOCK_STREAM)
-                        # try to connect to server #inx
-                        addr = self.Map[inx]
-                        sock = None
-                        print('connecting to #', inx, ' at ', addr)
-                        try:
-                                sock = self.connectSocket(addr, 5)
-                        except:
-                                print((sys.exc_type, sys.exc_value))
-                                pass
-                        if sock == None:
-                                print('Connection failed')
-                                continue                                
-                        stream = SockStream(sock)
-                        print('Sending HELLO...')
-                        stream.send(b'HELLO %d' % self.Inx)
-                        print(('Up connection to %d established' % inx))
-                        self.UpSock = sock
-                        self.Sel.register(self, rd = self.UpSock.fileno())
-                        self.UpStr = stream
-                        self.UpInx = inx
-                        
-                        #
-                        # wait for down connection
-                        #
-                        
-                        while self.DnStr is None:
-                            self.run(1)
-                        
-                        return inx
-                else:
-                    # this should connect at least to self
-                    raise RuntimeError("Can not connect uspream")
-                    
+
         def run(self):
             while True:
-                self.connect()
-                self.waitForDownConnection()
+                if self.UpSock is None:
+                    self.connect()
+                if self.DnSock is None:
+                    self.waitForDownConnection()
         
-                while True:
-                    poll([
-                        (self.SSock,        self.doConnectionRequest),
-                        (self.DnSock,       self.doReadDn),
-                        (self.UpSock,       self.doReadUp)
-                    ],
-                    10
-                )
-
-        def doReadDn(self):
-                self.DnStr.readMore(1024)
-                #print 'DnStr: EOF = %s, Buf = <%s>' % (self.DnStr.EOF, 
-                #               self.DnStr.Buf)
-                while self.DnStr.msgReady():
-                        msg = self.DnStr.getMsg()
-                        print(('RCVD DN:<%s>' % msg[:100]))
-                        pkt = CPacket.from_bytes(msg)
-                        if pkt.Type == CToken.Type:
-                                self.gotToken(pkt)
-                        elif pkt.Type == CPusher.Type:
-                                self.gotPusher(pkt)
-                        elif pkt.Type == CMessage.Type:
-                                self.gotMessage(pkt)
-                if self.DnStr.eof():
-                        # Down link is broken. Close the socket,unregister it
-                        self.downDisconnectedCbk()
-                        self.closeDnLink()
-
-        def doReadUp(self):     # nothing meaningfull, just pings
-                self.UpStr.readMore(1024)
-                while self.UpStr.msgReady():
-                        self.UpStr.getMsg()     # upstream should never send anything
-                                                # except zing/zong thing or disconnection
-                if self.UpStr.eof():
-                        # Down link is broken. Close the socket,unregister it
-                        print('up link broken')
-                        self.closeUpLink()
-                        self.connect()
-
+                while self.UpSock is not None and self.DnSock is not None:
+                    self.io(10)
+                    if self.LastPing < time.time() - 30:   # ping every 5 minutes
+                            if self.UpSock != None:
+                                    print ('Zinging up...')
+                                    self.UpStr.zing(1000)                   # disconnect after 15 minutes
+                                    #print 'UpStr: EOF = %s, Buf = <%s>, LastTxn = %s' % (
+                                    #       self.UpStr.EOF, self.UpStr.Buf, self.UpStr.LastTxn)
+                            if self.DnSock != None:
+                                    print ('Zinging down...')
+                                    self.DnStr.zing(1000)
+                            self.LastPing = time.time()
+                
+        def waitForDownConnection(self):
+            while self.DnSock is None:
+                self.io(10)
                 
         def initServerSock(self, inx, map):
                 if inx is not None:
@@ -214,7 +155,9 @@ class   ChainSegment(PyThread):
                 s.setblocking(1)
                 return s
                                                                                                 
+        @synchronized
         def connect(self):
+            if self.UpSock is None:
                 #print 'Connect: my inx = ', self.Inx
                 for i in range(len(self.Map)):
                         inx = self.Inx - i - 1
@@ -240,13 +183,6 @@ class   ChainSegment(PyThread):
                         self.Sel.register(self, rd = self.UpSock.fileno())
                         self.UpStr = stream
                         self.UpInx = inx
-                        
-                        #
-                        # wait for down connection
-                        #
-                        
-                        while self.DnStr is None:
-                            self.run(1)
                         
                         return inx
                 else:
@@ -311,10 +247,8 @@ class   ChainSegment(PyThread):
                         self.Sel.register(self, rd = s.fileno())
                         self.downConnectedCbk(inx)
                         print(('Down connection to %d established' % inx))
-
-        def downConnectedCbk(self, inx):        #virtual
-                pass
-                
+                        self.wakeup()
+                        
         def doReadDn(self):
                 self.DnStr.readMore(1024)
                 #print 'DnStr: EOF = %s, Buf = <%s>' % (self.DnStr.EOF, 
@@ -345,12 +279,10 @@ class   ChainSegment(PyThread):
                         self.closeUpLink()
                         self.connect()
 
-        def downDisconnectedCbk(self):          #virtual
-                pass
-                
         def gotMessage(self, msg):
                 print ('gotMessage(%s)' % msg.Body)
                 
+                self.wakeup()
                 if msg.Src == self.Inx:
                     self.messageConfirmedCbk(msg)
                 else:
@@ -365,6 +297,7 @@ class   ChainSegment(PyThread):
                     if forward:
                             self.sendUp(msg)
 
+        @synchronized
         def gotPusher(self, pusher):
                 #print 'Got pusher(src=%s, seq=%s)' % (pusher.Src, pusher.Seq)
                 src = pusher.Src
@@ -384,6 +317,7 @@ class   ChainSegment(PyThread):
                                 self.PusherSeq = None
                         self.sendUp(pusher)
 
+        @synchronized
         def gotToken(self, token):
                 #print 'Got token'
                 self.Token = token
@@ -399,17 +333,20 @@ class   ChainSegment(PyThread):
                                 token.Dst = self.Inx
                         if token.Dst != self.Inx:
                                 self.forwardToken()
+                        self.wakeup()
                         
         def needToken(self):
                 if not self.haveToken():
                         self.sendPusher()
                                                 
+        @synchronized
         def createToken(self):
                 print('creating token...')
                 self.PusherSeq = None
                 self.Token = CToken(self.Inx)
                 self.forwardToken()
                 
+        @synchronized
         def forwardToken(self, to = None):
                 if self.Token != None:
                         if to != None:
@@ -420,6 +357,7 @@ class   ChainSegment(PyThread):
                         self.Token = None
                 
 
+        @synchronized
         def sendPusher(self):
                 #print 'Sending pusher...'
                 seq = self.LastPushSeq + 1
@@ -429,6 +367,7 @@ class   ChainSegment(PyThread):
                 print("sendPusher: %s" % (p,))
                 self.sendUp(p)
 
+        @synchronized
         def closeDnLink(self):
                 if self.DnSock != None:         
                         print('closing down link')
@@ -437,6 +376,7 @@ class   ChainSegment(PyThread):
                         self.DnSock = None
                         self.DnStr = None
 
+        @synchronized
         def closeUpLink(self):
                 if self.UpSock != None:         
                         print('closing up link')
@@ -445,6 +385,7 @@ class   ChainSegment(PyThread):
                         self.UpSock = None
                         self.UpStr = None
 
+        @synchronized
         def sendUp(self, msg):
                 if self.UpSock == None:
                         if self.connect() < 0:
@@ -459,25 +400,16 @@ class   ChainSegment(PyThread):
                         self.UpStr.send(txt)
                         #os.system('netstat | grep 7001')
                         
-        def run(self, tmo = -1):
-                print ('run(): Sel: %s' % self.Sel.ReadList)
-                #os.system('netstat | grep 7001')
-                self.Sel.select(tmo)
-                #print self.LastPing, time.time()
-                if self.LastPing < time.time() - 30:   # ping every 5 minutes
-                        if self.UpSock != None:
-                                print ('Zinging up...')
-                                self.UpStr.zing(1000)                   # disconnect after 15 minutes
-                        if self.DnSock != None:
-                                print ('Zinging down...')
-                                self.DnStr.zing(1000)
-                        self.LastPing = time.time()
-                        
-
 #
 # Callbacks and interface
 #
 
+        def downConnectedCbk(self, inx):        #virtual
+                pass
+                
+        def downDisconnectedCbk(self):          #virtual
+                pass
+                
         def haveToken(self):
                 #print 'haveToken: token = ', self.Token
                 return self.Token != None
@@ -495,6 +427,7 @@ class   ChainSegment(PyThread):
         def createMessage(self, src, dst, txt):
             return CMessage(src, dst, txt)
             
+        @synchronized
         def sendMessage(self, msg):
                 forward = True
                 if not msg.isBroadcast() and not msg.isPoll():
@@ -506,6 +439,7 @@ class   ChainSegment(PyThread):
                         raise ChainException("Destination link is not connected")
                 return msg
 
+        @synchronized
         def waitForToken(self, timeout=None):
             t0 = time.time()
             while not self.haveToken() \
@@ -513,20 +447,7 @@ class   ChainSegment(PyThread):
                 self.needToken()
                 dt = 10.0 if timeout is None else min(10.0, t0 + timeout - time.time())
                 if dt > 0.0:
-                    self.run(dt)
-                        
-        def run(self, tmo = -1):
-                self.Sel.select(tmo)
-                if self.LastPing < time.time() - 30:   # ping every 5 minutes
-                        if self.UpSock != None:
-                                print ('Zinging up...')
-                                self.UpStr.zing(1000)                   # disconnect after 15 minutes
-                                #print 'UpStr: EOF = %s, Buf = <%s>, LastTxn = %s' % (
-                                #       self.UpStr.EOF, self.UpStr.Buf, self.UpStr.LastTxn)
-                        if self.DnSock != None:
-                                print ('Zinging down...')
-                                self.DnStr.zing(1000)
-                        self.LastPing = time.time()
+                    self.sleep(dt)
                         
         
 class ChainLink(ChainSegment):
@@ -537,6 +458,7 @@ class ChainLink(ChainSegment):
                 self.Unconfirmed = {}
                 self.CallbackDelegate = callback_delegate
                 
+        @synchronized
         def send(self, dst, text, src = None, send_now = False, need_confirmation = False, insert=False):
                 if src == None:
                         src = self.Inx
@@ -559,6 +481,7 @@ class ChainLink(ChainSegment):
             return self.send(CMessage.Broadcast, text, send_now = send_now, 
                     need_confirmation=need_confirmation, insert=insert)
 
+        @synchronized
         def gotTokenCbk(self):
             while self.OutMsgList:
                 msg, need_confirmation = self.OutMsgList[0]
@@ -567,11 +490,13 @@ class ChainLink(ChainSegment):
                 if need_confirmation:
                     self.Unconfirmed[msg.MID] = msg
 
+        @synchronized
         def messageConfirmedCbk(self, msg):
             mid = msg.MID
             if mid in self.Unconfirmed:
                 del self.Unconfirmed[mid]
                 self.CallbackDelegate.messageConfirmed(msg)
 
+        @synchronized
         def messageReceivedCbk(self, msg):
             self.CallbackDelegate.messageReceived(msg)
